@@ -1,0 +1,559 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Ideen-Cockpit – Entwurf</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #05050B;
+    --karte: #23234A;
+    --karte-2: #2B2B5C;
+    --karte-rand: rgba(160, 150, 255, 0.10);
+    --linie: rgba(255, 255, 255, 0.08);
+    --akzent: #A79BFF;
+    --akzent-2: #7C6CF2;
+    --text: #EEEDFB;
+    --leise: #9D9AC4;
+    --gruen: #3DDC84;
+    --orange: #F2A65A;
+    --rot: #FF6B7A;
+    --radius: 18px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: var(--bg); }
+  body {
+    font-family: "DM Sans", -apple-system, system-ui, sans-serif;
+    color: var(--text); -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+  button { font: inherit; color: inherit; cursor: pointer; }
+
+  .hinweis {
+    background: var(--akzent-2); color: #fff; font-size: 12px; font-weight: 600;
+    text-align: center; padding: 6px 12px;
+  }
+
+  /* Grundgerüst */
+  .app { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; padding: 16px 16px 120px; max-width: 1320px; margin: 0 auto; }
+  .seitenleiste { display: none; }
+  .inhalt, .inhalt > * { min-width: 0; }
+  .kopf { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 6px 0 4px; }
+  .kopf h1 { font-size: 26px; font-weight: 500; letter-spacing: -0.3px; }
+  .kopf .rechts { display: flex; gap: 10px; }
+  .rundknopf {
+    width: 42px; height: 42px; border-radius: 50%; border: 0;
+    background: #1B1B36; display: grid; place-items: center; position: relative;
+  }
+  .rundknopf svg { width: 20px; height: 20px; }
+  .rundknopf .punkt { position: absolute; top: 9px; right: 10px; width: 8px; height: 8px; border-radius: 50%; background: var(--akzent); }
+  .avatar { background: var(--akzent); color: #1A1640; font-weight: 700; }
+
+  .karte {
+    background: linear-gradient(160deg, var(--karte-2), var(--karte));
+    border: 1px solid var(--karte-rand); border-radius: var(--radius); padding: 18px;
+  }
+  .karte h2 { font-size: 15px; font-weight: 600; }
+  .karte .unter { font-size: 13px; color: var(--leise); margin-top: 3px; }
+  .kartenkopf { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 14px; }
+
+  /* Kennzahlen */
+  .zahlen { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .zahl { padding: 16px; }
+  .zahl .oben { display: flex; justify-content: space-between; align-items: center; }
+  .zahl .name { font-size: 13px; font-weight: 500; }
+  .zahl svg { width: 22px; height: 22px; color: var(--leise); }
+  .zahl .wert { font-size: 26px; font-weight: 500; color: var(--akzent); margin-top: 8px; letter-spacing: -0.3px; }
+  .zahl .delta { font-size: 11px; color: var(--leise); margin-top: 4px; }
+
+  /* Claude-Kugel */
+  .claude { display: flex; flex-direction: column; background: #07070F; border: 1px solid rgba(167,155,255,.45); }
+  .claude .blase {
+    background: linear-gradient(160deg, var(--karte-2), var(--karte)); border-radius: 14px;
+    padding: 14px 16px; font-size: 15px; text-align: center; line-height: 1.4; margin-top: 12px;
+  }
+  .kugel-knopf { background: none; border: 0; display: block; width: 100%; position: relative; margin: 6px 0; }
+  .kugel-knopf canvas { width: 100%; height: 230px; display: block; }
+  .kugel-knopf .mic {
+    position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+    width: 54px; height: 54px; border-radius: 50%;
+    background: rgba(167,155,255,.14); border: 1px solid rgba(167,155,255,.45);
+    display: grid; place-items: center; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+  }
+  .kugel-knopf .mic svg { width: 24px; height: 24px; }
+  .claude .fuss { display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: var(--leise); }
+  .textknopf { background: none; border: 0; color: var(--akzent); font-weight: 600; font-size: 13px; }
+
+  /* Neue Ideen */
+  .neu-liste { display: grid; grid-template-columns: 1fr; gap: 12px; }
+  .ideekarte {
+    background: rgba(0,0,0,.18); border: 1px solid var(--linie); border-radius: 14px;
+    padding: 14px; text-align: left; width: 100%; transition: border-color .15s;
+  }
+  .ideekarte:hover { border-color: rgba(167,155,255,.5); }
+  .ideekarte .reihe { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; }
+  .ideekarte h3 { font-size: 15px; font-weight: 600; line-height: 1.3; }
+  .ideekarte p { font-size: 13px; color: var(--leise); line-height: 1.45; margin-top: 6px; }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+  .chip { font-size: 11px; padding: 3px 9px; border-radius: 8px; background: rgba(255,255,255,.06); color: var(--leise); }
+  .chip.content { background: rgba(167,155,255,.16); color: var(--akzent); }
+  .chip.business { background: rgba(61,220,132,.13); color: var(--gruen); }
+  .chip.wartet { background: transparent; border: 1px dashed rgba(157,154,196,.6); }
+
+  .note {
+    font-size: 12px; font-weight: 600; padding: 4px 9px; border-radius: 7px; white-space: nowrap;
+    display: inline-flex; align-items: center; gap: 5px; border: 1px solid;
+  }
+  .note.stark { color: var(--gruen); border-color: rgba(61,220,132,.45); background: rgba(61,220,132,.10); }
+  .note.mittel { color: var(--orange); border-color: rgba(242,166,90,.45); background: rgba(242,166,90,.10); }
+  .note.schwach { color: var(--rot); border-color: rgba(255,107,122,.45); background: rgba(255,107,122,.10); }
+  .note.offen { color: var(--leise); border-color: var(--linie); background: transparent; }
+
+  /* Rückfragen */
+  .frage { border-top: 1px solid var(--linie); padding: 14px 0 2px; }
+  .frage:first-of-type { border-top: 0; padding-top: 0; }
+  .frage .zu { font-size: 12px; color: var(--leise); }
+  .frage .text { font-size: 14px; margin: 6px 0 10px; line-height: 1.45; }
+  .kleinknopf {
+    border: 1px solid rgba(167,155,255,.4); background: rgba(167,155,255,.1); color: var(--akzent);
+    border-radius: 10px; padding: 7px 12px; font-size: 13px; font-weight: 600;
+  }
+
+  /* Tabelle */
+  .filter { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; margin-bottom: 6px; }
+  .filter button {
+    flex: none; border: 1px solid var(--linie); background: transparent; color: var(--leise);
+    border-radius: 9px; padding: 6px 12px; font-size: 13px; font-weight: 500;
+  }
+  .filter button.an { background: var(--akzent); color: #1A1640; border-color: var(--akzent); }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th { text-align: left; font-weight: 500; color: var(--leise); font-size: 13px; padding: 12px 8px 10px; border-bottom: 1px solid var(--linie); }
+  td { padding: 14px 8px; border-bottom: 1px solid var(--linie); vertical-align: middle; }
+  tr:last-child td { border-bottom: 0; }
+  tbody tr { cursor: pointer; }
+  tbody tr:hover td { background: rgba(255,255,255,.025); }
+  td.titel { font-weight: 500; }
+  td.titel small { display: block; color: var(--leise); font-weight: 400; font-size: 12px; margin-top: 2px; }
+  .balken { display: flex; align-items: center; gap: 8px; }
+  .balken .spur { width: 54px; height: 6px; border-radius: 3px; background: rgba(255,255,255,.1); overflow: hidden; }
+  .balken .spur i { display: block; height: 100%; background: var(--akzent-2); border-radius: 3px; }
+  .verworfen td { opacity: .45; }
+  .nur-breit { display: none; }
+
+  /* Mikro-Leiste unten am Handy */
+  .mikro-leiste {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 5;
+    padding: 14px 16px calc(16px + env(safe-area-inset-bottom));
+    background: linear-gradient(to top, var(--bg) 55%, rgba(5,5,11,0));
+    display: flex; justify-content: center;
+  }
+  .mikro-leiste button {
+    border: 0; border-radius: 999px; padding: 15px 26px;
+    background: linear-gradient(135deg, #B9AEFF, var(--akzent-2)); color: #140F38;
+    font-weight: 700; font-size: 16px; display: flex; align-items: center; gap: 10px;
+    box-shadow: 0 10px 30px rgba(124,108,242,.45);
+  }
+  .mikro-leiste svg { width: 20px; height: 20px; }
+
+  /* Breiter Bildschirm (iPad, Mac) */
+  @media (min-width: 900px) {
+    .app { grid-template-columns: 76px minmax(0, 1fr); gap: 24px; padding: 24px 24px 40px; }
+    .seitenleiste {
+      display: flex; flex-direction: column; align-items: center; gap: 10px;
+      background: linear-gradient(180deg, var(--karte-2), var(--karte)); border-radius: var(--radius);
+      padding: 18px 0; position: sticky; top: 24px; height: calc(100vh - 48px);
+    }
+    .seitenleiste .logo { width: 44px; height: 44px; border-radius: 50%; background: var(--akzent); color: #1A1640; display: grid; place-items: center; font-weight: 700; margin-bottom: 14px; }
+    .seitenleiste button { width: 48px; height: 48px; border-radius: 13px; border: 0; background: transparent; display: grid; place-items: center; color: var(--leise); }
+    .seitenleiste button.an { background: rgba(167,155,255,.16); color: var(--text); }
+    .seitenleiste svg { width: 24px; height: 24px; }
+    .seitenleiste .unten { margin-top: auto; }
+    .inhalt { display: grid; gap: 18px; grid-template-columns: minmax(0, 1fr) 340px; grid-template-areas:
+      "kopf kopf" "zahlen zahlen" "neu claude" "liste claude" "liste fragen" "liste ."; align-content: start; }
+    .kopf { grid-area: kopf; }
+    .zahlen { grid-area: zahlen; grid-template-columns: repeat(4, 1fr); }
+    .bereich-neu { grid-area: neu; }
+    .bereich-claude { grid-area: claude; }
+    .bereich-fragen { grid-area: fragen; }
+    .bereich-liste { grid-area: liste; }
+    .neu-liste { grid-template-columns: 1fr 1fr; }
+    .kugel-knopf canvas { height: 300px; }
+    .mikro-leiste { display: none; }
+    .nur-breit { display: table-cell; }
+    .kopf h1 { font-size: 30px; }
+  }
+  @media (max-width: 899px) {
+    .inhalt { display: flex; flex-direction: column; gap: 16px; }
+    .bereich-claude { order: 2; }
+    .bereich-neu { order: 3; }
+    .bereich-fragen { order: 4; }
+    .bereich-liste { order: 5; }
+    .zahlen { order: 1; }
+    .kopf { order: 0; }
+  }
+
+  /* Ebenen */
+  .ebene { position: fixed; inset: 0; z-index: 20; display: none; }
+  .ebene.offen { display: block; }
+  .schleier { position: absolute; inset: 0; background: rgba(2,2,8,.7); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+
+  /* Aufnehmen */
+  .aufnahme { position: absolute; inset: 0; background: var(--bg); display: flex; flex-direction: column; align-items: center; padding: 20px 20px calc(30px + env(safe-area-inset-bottom)); }
+  .aufnahme .oben { width: 100%; max-width: 520px; display: flex; justify-content: space-between; align-items: center; }
+  .aufnahme .titel { color: var(--leise); font-size: 14px; }
+  .aufnahme canvas { width: min(100%, 420px); height: 320px; margin-top: 10px; }
+  .aufnahme .zeit { font-size: 40px; font-weight: 500; font-variant-numeric: tabular-nums; margin-top: -10px; }
+  .live {
+    width: 100%; max-width: 520px; min-height: 100px; margin-top: 18px;
+    background: linear-gradient(160deg, var(--karte-2), var(--karte)); border-radius: 16px; padding: 16px;
+    font-size: 17px; line-height: 1.5;
+  }
+  .live:empty::before { content: "Sprich einfach los …"; color: var(--leise); }
+  .stopp {
+    margin-top: auto; width: 76px; height: 76px; border-radius: 50%; border: 0;
+    background: rgba(255,107,122,.15); border: 1px solid rgba(255,107,122,.6);
+    display: grid; place-items: center;
+  }
+  .stopp span { width: 24px; height: 24px; border-radius: 6px; background: var(--rot); }
+  .aufnahme .hilfe { color: var(--leise); font-size: 13px; margin-top: 10px; }
+  .fertig { width: 100%; max-width: 520px; display: none; flex-direction: column; margin-top: 30px; }
+  .fertig p { color: var(--leise); font-size: 14px; line-height: 1.45; }
+  textarea {
+    width: 100%; min-height: 170px; margin-top: 14px; resize: vertical;
+    background: linear-gradient(160deg, var(--karte-2), var(--karte)); color: var(--text);
+    border: 1px solid var(--karte-rand); border-radius: 16px; padding: 16px; font: inherit; font-size: 17px; line-height: 1.5;
+  }
+  .hauptknopf {
+    margin-top: 14px; border: 0; border-radius: 14px; padding: 16px;
+    background: linear-gradient(135deg, #B9AEFF, var(--akzent-2)); color: #140F38; font-weight: 700; font-size: 16px;
+  }
+  .leiseknopf { background: none; border: 0; color: var(--leise); font-size: 14px; font-weight: 500; padding: 8px 0; }
+
+  /* Detail */
+  .blatt {
+    position: absolute; top: 0; right: 0; bottom: 0; width: 100%; max-width: 560px;
+    background: #0B0B18; border-left: 1px solid var(--karte-rand); overflow-y: auto;
+    padding-bottom: 150px;
+  }
+  .blatt .kopfzeile { position: sticky; top: 0; z-index: 2; background: #0B0B18; display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid var(--linie); }
+  .zurueck { background: none; border: 0; color: var(--akzent); font-size: 15px; font-weight: 600; }
+  .blatt .innen { padding: 18px 20px; display: grid; gap: 14px; }
+  .blatt h1 { font-size: 24px; line-height: 1.25; font-weight: 600; }
+  .blatt .block h4 { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--akzent); font-weight: 600; margin-bottom: 10px; }
+  .blatt .block p, .blatt .block li { font-size: 14px; line-height: 1.55; }
+  .blatt .block ul { padding-left: 18px; }
+  .blatt .block li + li { margin-top: 5px; }
+  .zitat { font-style: italic; color: var(--leise); }
+  .player { display: flex; align-items: center; gap: 10px; margin-top: 12px; }
+  .player .play { width: 34px; height: 34px; border-radius: 50%; background: var(--akzent); display: grid; place-items: center; }
+  .player .play::after { content: ""; border-left: 11px solid #1A1640; border-top: 7px solid transparent; border-bottom: 7px solid transparent; margin-left: 3px; }
+  .player .spur { flex: 1; height: 4px; border-radius: 2px; background: rgba(255,255,255,.1); }
+  .player small { color: var(--leise); }
+  .bewertung { display: flex; gap: 14px; align-items: center; }
+  .grossnote { min-width: 62px; height: 62px; border-radius: 14px; display: grid; place-items: center; font-size: 26px; font-weight: 600; color: var(--gruen); background: rgba(61,220,132,.1); border: 1px solid rgba(61,220,132,.45); }
+  details summary { list-style: none; cursor: pointer; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--akzent); font-weight: 600; }
+  details summary::after { content: " ▾"; }
+  details[open] summary::after { content: " ▴"; }
+  .skript { margin-top: 10px; font-size: 14px; line-height: 1.65; }
+  .skript b { color: var(--akzent); font-weight: 600; }
+  .pfad { font-size: 12px; color: var(--leise); }
+  .pfad code { font-size: 12px; }
+  .aktionen {
+    position: fixed; bottom: 0; right: 0; width: 100%; max-width: 560px;
+    background: #0B0B18; border-top: 1px solid var(--linie);
+    padding: 12px 16px calc(14px + env(safe-area-inset-bottom));
+    display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+  }
+  .aktionen button { border-radius: 12px; padding: 13px 8px; font-size: 15px; font-weight: 600; border: 1px solid; }
+  .aktionen .ja { color: var(--gruen); border-color: rgba(61,220,132,.45); background: rgba(61,220,132,.1); }
+  .aktionen .nein { color: var(--leise); border-color: var(--linie); background: transparent; }
+  .aktionen .dazu { grid-column: span 2; border: 0; background: linear-gradient(135deg, #B9AEFF, var(--akzent-2)); color: #140F38; font-weight: 700; }
+
+  .toast {
+    position: fixed; left: 50%; bottom: 110px; transform: translateX(-50%) translateY(16px);
+    background: var(--text); color: #140F38; padding: 12px 18px; border-radius: 12px;
+    font-weight: 600; font-size: 14px; opacity: 0; transition: all .25s; z-index: 40; max-width: 360px; text-align: center;
+  }
+  .toast.zeigen { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+<div class="hinweis">ENTWURF mit Beispiel-Ideen – noch nichts wird gespeichert</div>
+
+<div class="app">
+  <nav class="seitenleiste">
+    <div class="logo">T</div>
+    <button class="an" title="Cockpit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M9 12h12"/></svg></button>
+    <button title="Ideen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2Z"/></svg></button>
+    <button title="Brain"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 19.5V5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2Zm0 0A2 2 0 0 0 6 22h13"/></svg></button>
+    <button class="unten" title="Abmelden"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg></button>
+  </nav>
+
+  <main class="inhalt">
+    <div class="kopf">
+      <h1>Ideen-Cockpit</h1>
+      <div class="rechts">
+        <button class="rundknopf" title="Neu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></svg><span class="punkt"></span></button>
+        <button class="rundknopf avatar" title="Tiago">T</button>
+      </div>
+    </div>
+
+    <div class="zahlen">
+      <div class="karte zahl">
+        <div class="oben"><span class="name">Ideen gesamt</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2Z"/></svg></div>
+        <div class="wert">14</div><div class="delta">+3 diese Woche</div>
+      </div>
+      <div class="karte zahl">
+        <div class="oben"><span class="name">Ausgearbeitet</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M9 15l2 2 4-4"/></svg></div>
+        <div class="wert">11</div><div class="delta">1 wartet auf heute Abend</div>
+      </div>
+      <div class="karte zahl">
+        <div class="oben"><span class="name">Weiterverfolgt</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+        <div class="wert">4</div><div class="delta">davon 1 als Folge</div>
+      </div>
+      <div class="karte zahl">
+        <div class="oben"><span class="name">Ø Bewertung</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z"/></svg></div>
+        <div class="wert">6,8</div><div class="delta">von 10</div>
+      </div>
+    </div>
+
+    <section class="karte claude bereich-claude">
+      <h2>Claude</h2>
+      <div class="blase">Was ist dir eingefallen?<br><span style="color:var(--leise);font-size:13px">Tipp auf die Kugel und sprich einfach los.</span></div>
+      <button class="kugel-knopf" onclick="aufnahmeOeffnen()" aria-label="Idee einsprechen">
+        <canvas id="kugel"></canvas>
+        <span class="mic"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 15a3.5 3.5 0 0 0 3.5-3.5v-6a3.5 3.5 0 1 0-7 0v6A3.5 3.5 0 0 0 12 15Zm6-3.5a1 1 0 1 0-2 0 4 4 0 0 1-8 0 1 1 0 1 0-2 0 6 6 0 0 0 5 5.91V20H8.5a1 1 0 1 0 0 2h7a1 1 0 1 0 0-2H13v-2.59a6 6 0 0 0 5-5.91Z"/></svg></span>
+      </button>
+      <div class="fuss"><span>Wird heute Abend ausgearbeitet</span><button class="textknopf" onclick="schreibenOeffnen()">Lieber tippen</button></div>
+    </section>
+
+    <section class="karte bereich-neu">
+      <div class="kartenkopf">
+        <div><h2>Seit deinem letzten Besuch</h2><div class="unter">2 Ideen hat Claude seit gestern Abend ausgearbeitet</div></div>
+      </div>
+      <div class="neu-liste">
+        <button class="ideekarte" data-detail>
+          <div class="reihe"><h3>Benny beim Bäcker – Nachtschicht um 3 Uhr</h3><span class="note stark">▲ 8</span></div>
+          <p>Benny verschläft fast, verbrennt die erste Ladung Brötchen und lernt, warum Bäcker um 22 Uhr ins Bett gehen.</p>
+          <div class="chips"><span class="chip content">Content</span><span class="chip">von Tiago</span><span class="chip">Skript fertig</span></div>
+        </button>
+        <button class="ideekarte" data-detail>
+          <div class="reihe"><h3>Benny als Sticker-Pack verkaufen</h3><span class="note mittel">● 6</span></div>
+          <p>Die 10 Posen von Benny als WhatsApp- und iMessage-Sticker – kleines Zusatzgeld, Werbung für den Kanal.</p>
+          <div class="chips"><span class="chip business">Business</span><span class="chip">von Keanu</span></div>
+        </button>
+      </div>
+    </section>
+
+    <section class="karte bereich-fragen">
+      <div class="kartenkopf"><div><h2>Claude fragt nach</h2><div class="unter">Eine Antwort hilft beim Weiterdenken</div></div></div>
+      <div class="frage">
+        <div class="zu">zu „Benny als Sticker-Pack verkaufen“</div>
+        <div class="text">Sollen die Sticker kostenlos sein (als Werbung) oder etwas kosten? Das ändert, ob sich der Aufwand lohnt.</div>
+        <button class="kleinknopf" onclick="aufnahmeOeffnen('Antwort auf die Rückfrage')">🎙 Antworten</button>
+      </div>
+      <div class="frage">
+        <div class="zu">zu „Benny beim Bäcker“</div>
+        <div class="text">Soll der Bäcker-Meister eine feste Nebenfigur werden, die öfter vorkommt?</div>
+        <button class="kleinknopf" onclick="aufnahmeOeffnen('Antwort auf die Rückfrage')">🎙 Antworten</button>
+      </div>
+    </section>
+
+    <section class="karte bereich-liste">
+      <div class="kartenkopf"><div><h2>Alle Ideen</h2><div class="unter">Sortiert nach Bewertung</div></div></div>
+      <div class="filter">
+        <button class="an">Alle</button><button>Content</button><button>Business</button><button>Tiago</button><button>Keanu</button><button>Weiterverfolgt</button><button>Verworfen</button>
+      </div>
+      <table>
+        <thead><tr><th>Idee</th><th class="nur-breit">Von</th><th class="nur-breit">Art</th><th>Bewertung</th><th class="nur-breit">Status</th></tr></thead>
+        <tbody>
+          <tr data-detail><td class="titel">Benny beim Bäcker<small>Nachtschicht um 3 Uhr</small></td><td class="nur-breit">Tiago</td><td class="nur-breit">Content</td><td><div class="balken"><span class="note stark">▲ 8</span><span class="spur nur-breit" style="display:inline-block"><i style="width:80%"></i></span></div></td><td class="nur-breit">Skript fertig</td></tr>
+          <tr data-detail><td class="titel">Benny im Krankenhaus<small>Ein Tag als Pfleger</small></td><td class="nur-breit">Keanu</td><td class="nur-breit">Content</td><td><div class="balken"><span class="note stark">▲ 8</span><span class="spur nur-breit" style="display:inline-block"><i style="width:80%"></i></span></div></td><td class="nur-breit">Weiterverfolgt</td></tr>
+          <tr data-detail><td class="titel">Benny als Sticker-Pack<small>Zusatzgeld mit den Posen</small></td><td class="nur-breit">Keanu</td><td class="nur-breit">Business</td><td><div class="balken"><span class="note mittel">● 6</span><span class="spur nur-breit" style="display:inline-block"><i style="width:60%"></i></span></div></td><td class="nur-breit">Ausgearbeitet</td></tr>
+          <tr><td class="titel">Berufe, die es in 10 Jahren nicht mehr gibt<small>„Ich hab gedacht, so ein Wissens-Video …“</small></td><td class="nur-breit">Keanu</td><td class="nur-breit">–</td><td><span class="note offen">wartet</span></td><td class="nur-breit">Heute Abend</td></tr>
+          <tr class="verworfen"><td class="titel">Reaction-Videos auf fremde Clips<small>Verworfen: zu wenig eigen fürs CRP</small></td><td class="nur-breit">Tiago</td><td class="nur-breit">Content</td><td><span class="note schwach">▼ 3</span></td><td class="nur-breit">Verworfen</td></tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+</div>
+
+<div class="mikro-leiste">
+  <button onclick="aufnahmeOeffnen()"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 15a3.5 3.5 0 0 0 3.5-3.5v-6a3.5 3.5 0 1 0-7 0v6A3.5 3.5 0 0 0 12 15Zm6-3.5a1 1 0 1 0-2 0 4 4 0 0 1-8 0 1 1 0 1 0-2 0 6 6 0 0 0 5 5.91V20H8.5a1 1 0 1 0 0 2h7a1 1 0 1 0 0-2H13v-2.59a6 6 0 0 0 5-5.91Z"/></svg>Idee einsprechen</button>
+</div>
+
+<!-- Aufnehmen -->
+<div class="ebene" id="aufnehmen">
+  <div class="aufnahme">
+    <div class="oben"><button class="leiseknopf" onclick="schliessen('aufnehmen')">Abbrechen</button><span class="titel" id="aufnahme-titel">Neue Idee</span><span style="width:70px"></span></div>
+    <div id="laeuft" style="display:flex;flex-direction:column;align-items:center;width:100%;flex:1">
+      <canvas id="kugel-gross"></canvas>
+      <div class="zeit" id="zeit">0:00</div>
+      <div class="live" id="live"></div>
+      <button class="stopp" onclick="aufnahmeStoppen()" aria-label="Aufnahme beenden"><span></span></button>
+      <div class="hilfe">Tippen zum Beenden</div>
+    </div>
+    <div class="fertig" id="fertig">
+      <p>Passt der Text? Du kannst ihn kurz korrigieren. Die Aufnahme selbst wird immer mitgespeichert.</p>
+      <textarea id="text"></textarea>
+      <button class="hauptknopf" onclick="speichern()">Speichern</button>
+      <button class="leiseknopf" onclick="schliessen('aufnehmen')">Verwerfen</button>
+    </div>
+  </div>
+</div>
+
+<!-- Detail -->
+<div class="ebene" id="detail">
+  <div class="schleier" onclick="schliessen('detail')"></div>
+  <div class="blatt">
+    <div class="kopfzeile"><button class="zurueck" onclick="schliessen('detail')">‹ Zurück</button><span class="chip content">Content</span></div>
+    <div class="innen">
+      <div class="pfad">von Tiago · Di, 29.10. · 14:12</div>
+      <h1>Benny beim Bäcker – Nachtschicht um 3 Uhr</h1>
+      <div class="karte block">
+        <h4>Was du gesagt hast</h4>
+        <p class="zitat">„Ey, Bäcker wär doch geil für Benny, die fangen ja mitten in der Nacht an, und er ist dann total müde und macht alles kaputt, und am Ende gibt's frische Brötchen …“</p>
+        <div class="player"><div class="play"></div><div class="spur"></div><small>0:24</small></div>
+      </div>
+      <div class="karte block">
+        <h4>Bewertung</h4>
+        <div class="bewertung"><div class="grossnote">8</div><p>Passt perfekt ins Format: klarer Tagesablauf, eingebauter Witz (3 Uhr nachts), kennt jeder. Etwas teurer, weil Mehl und Ofen viel Bewegung brauchen.</p></div>
+      </div>
+      <div class="karte block">
+        <h4>Ausarbeitung</h4>
+        <ul>
+          <li><b>Hook:</b> Wecker um 2:47 Uhr. Benny: „Mein Kumpel hat gesagt, das wird ein entspannter Tag.“</li>
+          <li><b>Ablauf:</b> Ankunft im Dunkeln → Teig kneten (Benny verliert den Kampf) → erste Ladung verbrannt → Meister rettet's → Sonnenaufgang, frische Brötchen → Note.</li>
+          <li><b>Fakten-Karten:</b> Wie viele Brötchen ein Bäcker pro Nacht macht, warum der Teig über Nacht ruht.</li>
+          <li><b>Aufwand:</b> ca. 8 Szenen, davon 3 mit Schauspiel (Kling) → grob 4–5 $ KI-Kosten.</li>
+          <li><b>Ähnlich wie:</b> Folge 1 Schornsteinfeger – gleiche frühe Uhrzeit, also nicht direkt danach bringen.</li>
+        </ul>
+      </div>
+      <div class="karte block">
+        <details>
+          <summary>Skript-Entwurf (ca. 75 Sek.)</summary>
+          <div class="skript">
+            <p><b>[Szene 1 – Schlafzimmer, dunkel]</b> Wecker klingelt. 2:47 Uhr.</p>
+            <p><b>Benny (Off):</b> Mein Kumpel hat gesagt, das wird ein entspannter Tag. Es ist noch nicht mal Tag.</p>
+            <p><b>[Szene 2 – Backstube]</b> Mehlwolke. Benny hustet.</p>
+            <p><b>Benny (Off):</b> Wusstet ihr, dass ein Bäcker pro Nacht …</p>
+            <p style="color:var(--leise)">… (im Entwurf geht's hier weiter)</p>
+          </div>
+        </details>
+      </div>
+      <div class="karte block">
+        <h4>Claude fragt nach</h4>
+        <p>Soll der Bäcker-Meister eine feste Nebenfigur werden, die öfter vorkommt?</p>
+      </div>
+      <div class="pfad">Liegt im Brain unter <code>wiki/ideen/benny-baecker-nachtschicht.md</code></div>
+    </div>
+    <div class="aktionen">
+      <button class="ja" onclick="toast('Weiterverfolgen – Claude macht heute Abend eine Folge daraus'); schliessen('detail')">✓ Weiterverfolgen</button>
+      <button class="nein" onclick="toast('Verworfen – kommt im Brain auf „verworfen“'); schliessen('detail')">✕ Verwerfen</button>
+      <button class="dazu" onclick="aufnahmeOeffnen('Nachtrag zu „Benny beim Bäcker“')">🎙 Noch was dazusagen</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // Leuchtende Punktwolke – ruhig im Cockpit, lebhaft beim Aufnehmen
+  function kugel(canvas, opt) {
+    const ctx = canvas.getContext('2d');
+    const N = opt.punkte || 1600;
+    const pkt = [];
+    const golden = Math.PI * (3 - Math.sqrt(5));
+    for (let i = 0; i < N; i++) {
+      const y = 1 - (i / (N - 1)) * 2, r = Math.sqrt(1 - y * y), th = golden * i;
+      pkt.push([Math.cos(th) * r, y, Math.sin(th) * r]);
+    }
+    let w, h, dpr;
+    function groesse() {
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      w = canvas.clientWidth; h = canvas.clientHeight;
+      canvas.width = w * dpr; canvas.height = h * dpr;
+    }
+    groesse(); window.addEventListener('resize', groesse);
+    const start = performance.now();
+    function bild(now) {
+      if (!canvas.isConnected) return;
+      if (canvas.clientWidth !== w) groesse();
+      const t = (now - start) / 1000, e = opt.energie ? opt.energie() : 0.25;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, w, h);
+      const R = Math.min(w, h) * 0.34, cx = w / 2, cy = h / 2;
+      const ay = t * 0.35, ax = 0.5 + Math.sin(t * 0.2) * 0.25;
+      const cyA = Math.cos(ay), syA = Math.sin(ay), cxA = Math.cos(ax), sxA = Math.sin(ax);
+      for (const [x0, y0, z0] of pkt) {
+        const verform = 1 + (0.18 + e * 0.22) * Math.sin(3 * x0 + t * 1.3) * Math.cos(2.5 * y0 - t)
+                          + (0.08 + e * 0.12) * Math.sin(5 * z0 + t * 2.1);
+        let x = x0 * verform, y = y0 * verform * 0.92, z = z0 * verform;
+        const x1 = x * cyA + z * syA, z1 = -x * syA + z * cyA;
+        const y1 = y * cxA - z1 * sxA, z2 = y * sxA + z1 * cxA;
+        const tiefe = (z2 + 1.4) / 2.8;
+        const px = cx + x1 * R, py = cy + y1 * R;
+        const mix = (y0 + 1) / 2;
+        const rC = Math.round(150 + 100 * mix), gC = Math.round(200 - 40 * mix), bC = 255 - Math.round(20 * mix);
+        ctx.fillStyle = `rgba(${rC},${gC},${bC},${0.15 + tiefe * 0.75})`;
+        const s = 0.5 + tiefe * 1.3;
+        ctx.fillRect(px - s / 2, py - s / 2, s, s);
+      }
+      requestAnimationFrame(bild);
+    }
+    requestAnimationFrame(bild);
+  }
+
+  let energie = 0.25;
+  kugel(document.getElementById('kugel'), { punkte: 1500 });
+  kugel(document.getElementById('kugel-gross'), { punkte: 2200, energie: () => energie });
+
+  const beispiel = "Wie wär's mit Benny als Müllmann, der morgens hinten auf dem Wagen mitfährt und nicht weiß, welche Tonne welche ist …";
+  let uhr, tipper;
+
+  function aufnahmeOeffnen(titel) {
+    document.getElementById('aufnahme-titel').textContent = titel || 'Neue Idee';
+    document.getElementById('laeuft').style.display = 'flex';
+    document.getElementById('fertig').style.display = 'none';
+    document.getElementById('aufnehmen').classList.add('offen');
+    const live = document.getElementById('live');
+    live.textContent = '';
+    let s = 0, i = 0;
+    document.getElementById('zeit').textContent = '0:00';
+    clearInterval(uhr); clearInterval(tipper);
+    uhr = setInterval(() => { s++; document.getElementById('zeit').textContent = Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }, 1000);
+    tipper = setInterval(() => {
+      if (i < beispiel.length) { live.textContent = beispiel.slice(0, ++i); energie = 0.5 + Math.random() * 0.5; }
+      else energie = 0.2;
+    }, 45);
+  }
+  function aufnahmeStoppen() {
+    clearInterval(uhr); clearInterval(tipper); energie = 0.25;
+    document.getElementById('text').value = beispiel;
+    document.getElementById('laeuft').style.display = 'none';
+    document.getElementById('fertig').style.display = 'flex';
+  }
+  function schreibenOeffnen() {
+    aufnahmeOeffnen(); aufnahmeStoppen();
+    const t = document.getElementById('text');
+    t.value = ''; t.placeholder = 'Idee eintippen …';
+  }
+  function speichern() { schliessen('aufnehmen'); toast('Gespeichert ✓ – wird heute Abend ausgearbeitet'); }
+  function schliessen(id) {
+    clearInterval(uhr); clearInterval(tipper); energie = 0.25;
+    document.getElementById(id).classList.remove('offen');
+  }
+  function toast(t) {
+    const el = document.getElementById('toast');
+    el.textContent = t; el.classList.add('zeigen');
+    setTimeout(() => el.classList.remove('zeigen'), 2400);
+  }
+  document.querySelectorAll('[data-detail]').forEach(k => k.addEventListener('click', () => document.getElementById('detail').classList.add('offen')));
+  document.querySelectorAll('.filter button').forEach(b => b.addEventListener('click', () => {
+    document.querySelectorAll('.filter button').forEach(x => x.classList.remove('an')); b.classList.add('an');
+  }));
+</script>
+</body>
+</html>
