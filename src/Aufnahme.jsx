@@ -42,12 +42,13 @@ export default function Aufnahme({ titel = 'Neue Idee', nurText = false, onSpeic
         log('mikrofon_ok')
       } catch (e) {
         log('mikrofon_fehler', { fehler: fehlerText(e) })
-        if (abgebrochen) return
+        if (abgebrochen || r.beendet) return
         setHinweis('Kein Zugriff aufs Mikrofon. Du kannst die Idee unten eintippen – oder in den Einstellungen das Mikrofon für diese App erlauben.')
         setPhase('fertig')
         return
       }
-      if (abgebrochen) return stream.getTracks().forEach((t) => t.stop())
+      // Gestoppt oder abgebrochen, während das iPhone nach dem Mikrofon gefragt hat: sofort wieder aus
+      if (abgebrochen || r.beendet) return stream.getTracks().forEach((t) => t.stop())
       r.stream = stream
 
       // Lautstärke für die Kugel
@@ -144,6 +145,7 @@ export default function Aufnahme({ titel = 'Neue Idee', nurText = false, onSpeic
   // Jeder Schritt einzeln abgesichert – Stopp und Abbrechen müssen immer funktionieren
   function aufraeumen() {
     const r = res.current
+    r.beendet = true
     r.aufnehmend = false
     clearInterval(r.uhr); clearInterval(r.pegelUhr)
     try { r.erkennung?.abort?.() } catch { /* schon aus */ }
