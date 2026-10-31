@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import Kugel from './Kugel.jsx'
 import { MAX_SEKUNDEN } from './config.js'
 
-const Erkennung = typeof window !== 'undefined' && (window.SpeechRecognition || window.webkitSpeechRecognition)
+const erkennungHolen = () => window.SpeechRecognition || window.webkitSpeechRecognition
 
 function bestesFormat() {
   if (typeof MediaRecorder === 'undefined') return ''
@@ -22,6 +22,7 @@ export default function Aufnahme({ titel = 'Neue Idee', nurText = false, onSpeic
   const [text, setText] = useState('')
   const [hinweis, setHinweis] = useState('')
   const [blob, setBlob] = useState(null)
+  const [ohneLive, setOhneLive] = useState(false)
 
   const pegel = useRef(0)
   const res = useRef({})
@@ -66,35 +67,13 @@ export default function Aufnahme({ titel = 'Neue Idee', nurText = false, onSpeic
       const mime = bestesFormat()
       r.recorder = new MediaRecorder(r.stream, mime ? { mimeType: mime } : undefined)
       r.stuecke = []
-      r.recorder.ondataavailable = (e) => e.data.size && r.stuecke.push(e.data)
+      r.recorder.ondataavailable = (e) => { if (e.data && e.data.size) r.stuecke.push(e.data) }
       r.recorder.onstop = () => {
         const typ = r.recorder.mimeType || mime || 'audio/mp4'
-        setBlob({ blob: new Blob(r.stuecke, { type: typ }), mime: typ })
+        const b = new Blob(r.stuecke, { type: typ })
+        setBlob(b.size ? { blob: b, mime: typ } : { blob: null, mime: null, leer: true })
       }
       r.recorder.start(1000)
-
-      // Live-Text, wo Safari das kann – sonst tippt Claude es abends aus der Aufnahme ab
-      if (Erkennung) {
-        try {
-          const erk = new Erkennung()
-          erk.lang = 'de-DE'
-          erk.continuous = true
-          erk.interimResults = true
-          erk.onresult = (e) => {
-            let zwischen = ''
-            for (let i = e.resultIndex; i < e.results.length; i++) {
-              const t = e.results[i][0].transcript
-              if (e.results[i].isFinal) endgueltig.current += (endgueltig.current ? ' ' : '') + t.trim()
-              else zwischen += t
-            }
-            setLive((endgueltig.current + ' ' + zwischen).trim())
-          }
-          erk.onerror = () => {}
-          erk.onend = () => { if (r.aufnehmend) { try { erk.start() } catch { /* läuft schon */ } } }
-          erk.start()
-          r.erkennung = erk
-        } catch { r.erkennung = null }
-      }
 
       r.aufnehmend = true
       setPhase('laeuft')
@@ -104,8 +83,47 @@ export default function Aufnahme({ titel = 'Neue Idee', nurText = false, onSpeic
         setSekunden(s)
         if (s >= MAX_SEKUNDEN) stoppen()
       }, 250)
+
+      // Live-Text, wo Safari das kann – sonst tippt Claude es abends aus der Aufnahme ab.
+      // Auf dem iPhone scheitert das oft, während gleichzeitig aufgenommen wird: dann still aufgeben,
+      // nie in schneller Schleife neu starten.
+      const Erkennung = erkennungHolen()
+      if (Erkennung) {
+        let neustarts = 0
+        const erk = new Erkennung()
+        erk.lang = 'de-DE'
+        erk.continuous = true
+        erk.interimResults = true
+        erk.onresult = (e) => {
+          neustarts = 0
+          let zwischen = ''
+          for (let i = e.resultIndex; i < e.results.length; i++) {
+            const t = e.results[i][0].transcript
+            if (e.results[i].isFinal) endgueltig.current += (endgueltig.current ? ' ' : '') + t.trim()
+            else zwischen += t
+          }
+          setLive((endgueltig.current + ' ' + zwischen).trim())
+        }
+        erk.onerror = (e) => {
+          if (e.error !== 'no-speech' && e.error !== 'aborted') { r.erkennungAus = true; setOhneLive(true) }
+        }
+        erk.onend = () => {
+          if (!r.aufnehmend || r.erkennungAus) return
+          if (++neustarts > 5) { r.erkennungAus = true; setOhneLive(true); return }
+          setTimeout(() => { if (r.aufnehmend && !r.erkennungAus) { try { erk.start() } catch { /* läuft schon */ } } }, 500)
+        }
+        r.erkennung = erk
+        try { erk.start() } catch { r.erkennungAus = true; setOhneLive(true) }
+      } else {
+        setOhneLive(true)
+      }
     }
-    starten()
+    starten().catch((e) => {
+      if (abgebrochen) return
+      aufraeumen()
+      setHinweis('Die Aufnahme ließ sich nicht starten (' + (e?.message || e) + '). Du kannst die Idee unten eintippen.')
+      setPhase('fertig')
+    })
 
     return () => {
       abgebrochen = true
@@ -114,17 +132,22 @@ export default function Aufnahme({ titel = 'Neue Idee', nurText = false, onSpeic
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // Jeder Schritt einzeln abgesichert – Stopp und Abbrechen müssen immer funktionieren
   function aufraeumen() {
     const r = res.current
     r.aufnehmend = false
     clearInterval(r.uhr); clearInterval(r.pegelUhr)
-    try { r.erkennung?.stop() } catch { /* schon aus */ }
-    if (r.recorder?.state === 'recording') r.recorder.stop()
-    r.stream?.getTracks().forEach((t) => t.stop())
-    r.audio?.close?.().catch(() => {})
+    try { r.erkennung?.abort?.() } catch { /* schon aus */ }
+    try { if (r.recorder && r.recorder.state !== 'inactive') r.recorder.stop() } catch { /* schon aus */ }
+    try { r.stream?.getTracks().forEach((t) => t.stop()) } catch { /* schon aus */ }
+    try { Promise.resolve(r.audio?.close?.()).catch(() => {}) } catch { /* schon zu */ }
   }
 
   function stoppen() {
+    const r = res.current
+    if (!r.recorder) setBlob({ blob: null, mime: null, leer: true })
+    // Falls Safari die fertige Aufnahme nie meldet, nicht ewig warten
+    setTimeout(() => setBlob((b) => b ?? { blob: null, mime: null, leer: true }), 3000)
     aufraeumen()
     setText((endgueltig.current || '').trim() || res.current.letzterLive || '')
     setPhase('fertig')
@@ -133,7 +156,8 @@ export default function Aufnahme({ titel = 'Neue Idee', nurText = false, onSpeic
   // Den letzten Live-Stand merken, falls Safari den Satz nicht mehr "fertig" meldet
   useEffect(() => { res.current.letzterLive = live }, [live])
 
-  const ohneText = !text.trim() && !blob
+  const mitAudio = !!blob?.blob
+  const wartetAufAudio = !nurText && !hinweis && blob === null
 
   return (
     <div className="ebene offen">
@@ -148,11 +172,11 @@ export default function Aufnahme({ titel = 'Neue Idee', nurText = false, onSpeic
           <div className="laeuft">
             <Kugel className="kugel-gross" punkte={2200} energie={() => 0.2 + pegel.current * 0.8} />
             <div className="zeit">{uhrzeit(sekunden)}</div>
-            <div className="live">{phase === 'start' ? 'Mikrofon startet …' : live}</div>
-            {phase === 'laeuft' && !Erkennung && (
+            <div className="live">{phase === 'start' ? 'Mikrofon startet …' : (live || (ohneLive ? 'Ich höre zu …' : ''))}</div>
+            {phase === 'laeuft' && ohneLive && (
               <p className="hilfe">Der Text erscheint nicht live – die Aufnahme wird abends abgetippt.</p>
             )}
-            <button className="stopp" onClick={stoppen} disabled={phase !== 'laeuft'} aria-label="Aufnahme beenden"><span /></button>
+            <button className="stopp" onClick={stoppen} aria-label="Aufnahme beenden"><span /></button>
             <div className="hilfe">Tippen zum Beenden</div>
           </div>
         )}
@@ -162,9 +186,11 @@ export default function Aufnahme({ titel = 'Neue Idee', nurText = false, onSpeic
             {hinweis && <p className="warnung">{hinweis}</p>}
             {!nurText && !hinweis && (
               <p>
-                {text
-                  ? 'Passt der Text? Du kannst ihn kurz korrigieren. Die Aufnahme selbst wird immer mitgespeichert.'
-                  : 'Die Aufnahme ist gespeichert und wird heute Abend abgetippt. Du kannst unten trotzdem ein paar Worte dazuschreiben.'}
+                {blob?.leer
+                  ? 'Die Aufnahme ist leider leer geblieben. Tipp die Idee bitte unten ein.'
+                  : text
+                    ? 'Passt der Text? Du kannst ihn kurz korrigieren. Die Aufnahme selbst wird immer mitgespeichert.'
+                    : 'Die Aufnahme wird heute Abend abgetippt. Du kannst unten trotzdem ein paar Worte dazuschreiben.'}
               </p>
             )}
             <textarea
@@ -175,10 +201,10 @@ export default function Aufnahme({ titel = 'Neue Idee', nurText = false, onSpeic
             />
             <button
               className="hauptknopf"
-              disabled={ohneText || (!nurText && !hinweis && !blob)}
+              disabled={wartetAufAudio || (!text.trim() && !mitAudio)}
               onClick={() => onSpeichern({ text: text.trim(), blob: blob?.blob || null, mime: blob?.mime || null })}
             >
-              Speichern
+              {wartetAufAudio ? 'Aufnahme wird gesichert …' : 'Speichern'}
             </button>
             <button className="leiseknopf" onClick={() => { aufraeumen(); onAbbruch() }}>Verwerfen</button>
           </div>
