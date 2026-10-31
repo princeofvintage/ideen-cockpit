@@ -43,6 +43,8 @@ code { font-family: ui-monospace, Menlo, monospace; font-size: .9em; }
 .login input:focus { outline: 2px solid var(--akzent-2); }
 .login-kugel { width: 100%; height: 220px; display: block; }
 .warnung { color: var(--rot) !important; font-size: 14px; line-height: 1.45; }
+.login .info { color: var(--gruen); font-size: 14px; }
+.login-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 18px; }
 
 /* Grundgerüst */
 .app {

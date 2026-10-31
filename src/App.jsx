@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from './supabase.js'
 import * as warteschlange from './warteschlange.js'
-import Login from './Login.jsx'
+import Login, { NeuesPasswort } from './Login.jsx'
 import Cockpit from './Cockpit.jsx'
 import Detail from './Detail.jsx'
 import Aufnahme from './Aufnahme.jsx'
@@ -35,10 +35,14 @@ export default function App() {
   const [detailId, setDetailId] = useState(null)
   const [aufnahme, setAufnahme] = useState(null)
   const [toast, setToast] = useState('')
+  const [passwortNeu, setPasswortNeu] = useState(false)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSitzung(data.session))
-    const { data } = supabase.auth.onAuthStateChange((_e, s) => setSitzung(s))
+    const { data } = supabase.auth.onAuthStateChange((ereignis, s) => {
+      setSitzung(s)
+      if (ereignis === 'PASSWORD_RECOVERY') setPasswortNeu(true)
+    })
     return () => data.subscription.unsubscribe()
   }, [])
 
@@ -125,6 +129,7 @@ export default function App() {
 
   if (sitzung === undefined) return <div className="laden">Lädt …</div>
   if (!sitzung) return <Login />
+  if (passwortNeu) return <NeuesPasswort onFertig={() => { setPasswortNeu(false); zeigen('Neues Passwort gespeichert ✓') }} />
   if (gesperrt) {
     return (
       <div className="login">
