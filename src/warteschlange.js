@@ -1,6 +1,7 @@
 // Alles, was gespeichert werden soll, landet zuerst hier auf dem Handy (IndexedDB).
 // Erst wenn Supabase es sicher hat, wird es hier gelöscht. So geht bei Funkloch nichts verloren.
 import { supabase } from './supabase.js'
+import { log, fehlerText } from './protokoll.js'
 
 const DB_NAME = 'ideen-cockpit'
 const STORE = 'warteschlange'
@@ -93,6 +94,7 @@ export async function abschicken(name) {
         await entfernen(eintrag.id)
       } catch (e) {
         console.warn('Noch nicht gesendet, neuer Versuch später:', e)
+        log('senden_fehler', { typ: eintrag.typ, fehler: fehlerText(e) })
         break
       }
     }

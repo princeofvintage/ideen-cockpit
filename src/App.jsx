@@ -6,6 +6,7 @@ import Cockpit from './Cockpit.jsx'
 import Detail from './Detail.jsx'
 import Aufnahme from './Aufnahme.jsx'
 import { Icon, wer } from './teile.jsx'
+import { log, fehlerText, VERSION } from './protokoll.js'
 
 const SEIT_KEY = 'ideen-cockpit-seit'
 const SITZUNG_MS = 30 * 60 * 1000
@@ -73,6 +74,7 @@ export default function App() {
       if (aus) return
       if (!data) { setGesperrt(true); return }
       setName(data.name)
+      log('app_geoeffnet')
       setWartend(await warteschlange.alle())
       await abschicken(data.name)
       setSeit(await seitBestimmen(data.name))
@@ -102,13 +104,21 @@ export default function App() {
   async function speichern({ text, blob, mime }) {
     const ziel = aufnahme.ziel
     setAufnahme(null)
+    log('speichern', { textZeichen: text.length, audioBytes: blob?.size || 0, mime, ziel: ziel.typ })
     const eintrag = {
       id: crypto.randomUUID(), erstellt_am: new Date().toISOString(), text, blob, mime,
       ...(ziel.typ === 'idee' ? { typ: 'idee' } : { typ: 'nachtrag', idee_id: ziel.idee_id, art: ziel.art, frage: ziel.frage }),
     }
-    await warteschlange.hinzufuegen(eintrag)
+    try {
+      await warteschlange.hinzufuegen(eintrag)
+    } catch (e) {
+      log('warteschlange_fehler', { fehler: fehlerText(e) })
+      zeigen('Speichern auf dem Handy ging nicht: ' + fehlerText(e))
+      return
+    }
     setWartend(await warteschlange.alle())
     const rest = await warteschlange.abschicken(name)
+    log('abgeschickt', { rest })
     setWartend(await warteschlange.alle())
     zeigen(rest ? 'Auf dem Handy gesichert ✓ – wird hochgeladen, sobald Netz da ist' : 'Gespeichert ✓ – wird heute Abend ausgearbeitet')
     laden()
@@ -154,6 +164,7 @@ export default function App() {
           <button className="an" title="Cockpit">{Icon.cockpit}</button>
           <button className="unten" title="Abmelden" onClick={() => supabase.auth.signOut()}>{Icon.raus}</button>
         </nav>
+        <div className="version-fuss">v {VERSION}</div>
         <Cockpit
           name={name} ideen={ideen} nachtraege={nachtraege} wartend={wartend} seit={seit}
           onAufnehmen={() => neueAufnahme()} onTippen={() => neueAufnahme(true)}

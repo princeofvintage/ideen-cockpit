@@ -1,6 +1,6 @@
 // Hält die App selbst auf dem Handy vor, damit sie auch ohne Netz aufgeht.
 // Daten (Supabase) laufen nie über diesen Speicher.
-const CACHE = 'ideen-cockpit-v2'
+const CACHE = 'ideen-cockpit-v3'
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(['./', './index.html', './manifest.webmanifest', './icon-192.png'])))

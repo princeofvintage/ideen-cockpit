@@ -305,3 +305,6 @@ details[open] summary::after { content: " ▴"; }
   font-weight: 600; font-size: 14px; opacity: 0; transition: all .25s; z-index: 40; width: max-content; max-width: calc(100% - 32px); text-align: center;
 }
 .toast.zeigen { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+.version { font-size: 11px; color: var(--leise); opacity: .6; min-width: 70px; text-align: right; }
+.version-fuss { position: fixed; right: 10px; bottom: calc(4px + env(safe-area-inset-bottom)); font-size: 10px; color: var(--leise); opacity: .5; z-index: 6; pointer-events: none; }

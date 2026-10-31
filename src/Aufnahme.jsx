@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import Kugel from './Kugel.jsx'
 import { MAX_SEKUNDEN } from './config.js'
+import { log, fehlerText, VERSION } from './protokoll.js'
 
 const erkennungHolen = () => window.SpeechRecognition || window.webkitSpeechRecognition
 
@@ -35,9 +36,12 @@ export default function Aufnahme({ titel = 'Neue Idee', nurText = false, onSpeic
 
     async function starten() {
       let stream
+      log('aufnahme_start', { erkennung: !!erkennungHolen(), recorder: typeof MediaRecorder !== 'undefined', format: bestesFormat() })
       try {
         stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      } catch {
+        log('mikrofon_ok')
+      } catch (e) {
+        log('mikrofon_fehler', { fehler: fehlerText(e) })
         if (abgebrochen) return
         setHinweis('Kein Zugriff aufs Mikrofon. Du kannst die Idee unten eintippen – oder in den Einstellungen das Mikrofon für diese App erlauben.')
         setPhase('fertig')
@@ -68,13 +72,16 @@ export default function Aufnahme({ titel = 'Neue Idee', nurText = false, onSpeic
       r.recorder = new MediaRecorder(r.stream, mime ? { mimeType: mime } : undefined)
       r.stuecke = []
       r.recorder.ondataavailable = (e) => { if (e.data && e.data.size) r.stuecke.push(e.data) }
+      r.recorder.onerror = (e) => log('recorder_fehler', { fehler: fehlerText(e?.error || e) })
       r.recorder.onstop = () => {
         const typ = r.recorder.mimeType || mime || 'audio/mp4'
         const b = new Blob(r.stuecke, { type: typ })
+        log('recorder_fertig', { bytes: b.size, stuecke: r.stuecke.length, typ })
         setBlob(b.size ? { blob: b, mime: typ } : { blob: null, mime: null, leer: true })
       }
       r.recorder.start(1000)
 
+      log('recorder_laeuft', { typ: r.recorder.mimeType })
       r.aufnehmend = true
       setPhase('laeuft')
       const beginn = Date.now()
@@ -105,6 +112,7 @@ export default function Aufnahme({ titel = 'Neue Idee', nurText = false, onSpeic
           setLive((endgueltig.current + ' ' + zwischen).trim())
         }
         erk.onerror = (e) => {
+          log('erkennung_fehler', { fehler: e.error, neustarts })
           if (e.error !== 'no-speech' && e.error !== 'aborted') { r.erkennungAus = true; setOhneLive(true) }
         }
         erk.onend = () => {
@@ -113,12 +121,13 @@ export default function Aufnahme({ titel = 'Neue Idee', nurText = false, onSpeic
           setTimeout(() => { if (r.aufnehmend && !r.erkennungAus) { try { erk.start() } catch { /* läuft schon */ } } }, 500)
         }
         r.erkennung = erk
-        try { erk.start() } catch { r.erkennungAus = true; setOhneLive(true) }
+        try { erk.start(); log('erkennung_start') } catch (e) { log('erkennung_startfehler', { fehler: fehlerText(e) }); r.erkennungAus = true; setOhneLive(true) }
       } else {
         setOhneLive(true)
       }
     }
     starten().catch((e) => {
+      log('aufnahme_fehler', { fehler: fehlerText(e) })
       if (abgebrochen) return
       aufraeumen()
       setHinweis('Die Aufnahme ließ sich nicht starten (' + (e?.message || e) + '). Du kannst die Idee unten eintippen.')
@@ -145,6 +154,7 @@ export default function Aufnahme({ titel = 'Neue Idee', nurText = false, onSpeic
 
   function stoppen() {
     const r = res.current
+    log('stopp_gedrueckt', { recorder: r.recorder?.state || 'keiner', liveZeichen: (res.current.letzterLive || '').length })
     if (!r.recorder) setBlob({ blob: null, mime: null, leer: true })
     // Falls Safari die fertige Aufnahme nie meldet, nicht ewig warten
     setTimeout(() => setBlob((b) => b ?? { blob: null, mime: null, leer: true }), 3000)
@@ -165,7 +175,7 @@ export default function Aufnahme({ titel = 'Neue Idee', nurText = false, onSpeic
         <div className="oben">
           <button className="leiseknopf" onClick={() => { aufraeumen(); onAbbruch() }}>Abbrechen</button>
           <span className="titel">{titel}</span>
-          <span style={{ width: 70 }} />
+          <span className="version">v {VERSION}</span>
         </div>
 
         {phase !== 'fertig' && (
