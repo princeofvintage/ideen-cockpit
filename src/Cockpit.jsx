@@ -67,7 +67,7 @@ export default function Cockpit({ name, ideen, nachtraege, wartend, seit, onAufn
       <div className="zahlen">
         <Zahl name="Ideen gesamt" icon={Icon.birne} wert={zahlen.gesamt} delta={`+${zahlen.woche} diese Woche`} />
         <Zahl name="Ausgearbeitet" icon={Icon.dokument} wert={zahlen.fertig}
-          delta={zahlen.warten ? `${zahlen.warten} ${zahlen.warten === 1 ? 'wartet' : 'warten'} auf heute Abend` : 'alles erledigt'} />
+          delta={zahlen.warten ? `${zahlen.warten} ${zahlen.warten === 1 ? 'wartet' : 'warten'} auf Claude` : 'alles erledigt'} />
         <Zahl name="Weiterverfolgt" icon={Icon.pfeil} wert={zahlen.weiter} delta="werden zu Folgen" />
         <Zahl name="Ø Bewertung" icon={Icon.stern} wert={zahlen.schnitt} delta="von 10" />
       </div>
@@ -79,7 +79,7 @@ export default function Cockpit({ name, ideen, nachtraege, wartend, seit, onAufn
           <Kugel className="kugel-klein" punkte={1500} />
           <span className="mic">{Icon.mic}</span>
         </button>
-        <div className="fuss"><span>Wird heute Abend ausgearbeitet</span><button className="textknopf" onClick={onTippen}>Lieber tippen</button></div>
+        <div className="fuss"><span>Wird bald ausgearbeitet</span><button className="textknopf" onClick={onTippen}>Lieber tippen</button></div>
       </section>
 
       {neu.length > 0 && (

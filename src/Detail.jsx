@@ -32,15 +32,15 @@ export default function Detail({ idee, nachtraege, onZurueck, onStatus, onDazusa
           <div className="pfad">von {wer(idee.von)} · {wann(idee.erstellt_am)}</div>
           <h1>{titelVon(idee)}</h1>
 
-          {idee.status === 'weiterverfolgen' && <div className="banner gruen">✓ Weiterverfolgt{idee.status_von ? ` von ${wer(idee.status_von)}` : ''}{idee.offen_fuer_claude ? ' – Claude macht heute Abend eine Folge daraus' : ''}</div>}
+          {idee.status === 'weiterverfolgen' && <div className="banner gruen">✓ Weiterverfolgt{idee.status_von ? ` von ${wer(idee.status_von)}` : ''}{idee.offen_fuer_claude ? ' – Claude macht bald eine Folge daraus' : ''}</div>}
           {idee.status === 'verworfen' && <div className="banner">✕ Verworfen{idee.status_von ? ` von ${wer(idee.status_von)}` : ''}</div>}
-          {!fertig && <div className="banner">Claude arbeitet diese Idee heute Abend aus.</div>}
+          {!fertig && <div className="banner">Claude arbeitet diese Idee bald aus – meist innerhalb einer Stunde, wenn Tiagos Mac an ist.</div>}
 
           <div className="karte block">
             <h4>{idee.von ? `Was ${wer(idee.von)} gesagt hat` : 'Original'}</h4>
             {idee.transkript
               ? <p className="zitat">„{idee.transkript}“</p>
-              : <p className="zitat">Wird heute Abend aus der Aufnahme abgetippt.</p>}
+              : <p className="zitat">Wird bald aus der Aufnahme abgetippt.</p>}
             <Abspielen pfad={idee.audio_pfad} />
           </div>
 
@@ -86,9 +86,9 @@ export default function Detail({ idee, nachtraege, onZurueck, onStatus, onDazusa
               <h4>Nachträge</h4>
               {nachtraege.map((n) => (
                 <div className="frage" key={n.id}>
-                  <div className="zu">{wer(n.von)} · {wann(n.erstellt_am)}{n.art === 'antwort' ? ' · Antwort' : ''}{n.verarbeitet ? '' : ' · kommt heute Abend dazu'}</div>
+                  <div className="zu">{wer(n.von)} · {wann(n.erstellt_am)}{n.art === 'antwort' ? ' · Antwort' : ''}{n.verarbeitet ? '' : ' · kommt bald dazu'}</div>
                   {n.frage && <div className="zu">auf: {n.frage}</div>}
-                  <div className="text">{n.text || 'Sprachaufnahme – wird heute Abend abgetippt'}</div>
+                  <div className="text">{n.text || 'Sprachaufnahme – wird bald abgetippt'}</div>
                   <Abspielen pfad={n.audio_pfad} />
                 </div>
               ))}

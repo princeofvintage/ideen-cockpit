@@ -16,7 +16,7 @@ export function Note({ wert }) {
 
 export const ART = { content: 'Content', business: 'Business', sonstiges: 'Sonstiges' }
 export const STATUS = {
-  neu: 'Heute Abend', ausgearbeitet: 'Ausgearbeitet', weiterverfolgen: 'Weiterverfolgt', verworfen: 'Verworfen',
+  neu: 'Wartet auf Claude', ausgearbeitet: 'Ausgearbeitet', weiterverfolgen: 'Weiterverfolgt', verworfen: 'Verworfen',
 }
 
 export const wer = (von) => NAMEN[von] || von

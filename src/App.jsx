@@ -120,7 +120,7 @@ export default function App() {
     const rest = await warteschlange.abschicken(name)
     log('abgeschickt', { rest })
     setWartend(await warteschlange.alle())
-    zeigen(rest ? 'Auf dem Handy gesichert ✓ – wird hochgeladen, sobald Netz da ist' : 'Gespeichert ✓ – wird heute Abend ausgearbeitet')
+    zeigen(rest ? 'Auf dem Handy gesichert ✓ – wird hochgeladen, sobald Netz da ist' : 'Gespeichert ✓ – wird bald ausgearbeitet')
     laden()
   }
 
@@ -130,7 +130,7 @@ export default function App() {
     await warteschlange.hinzufuegen({ id: crypto.randomUUID(), typ: 'status', idee_id: idee.id, status, erstellt_am: jetzt })
     const rest = await warteschlange.abschicken(name)
     setWartend(await warteschlange.alle())
-    zeigen(status === 'weiterverfolgen' ? 'Weiterverfolgen ✓ – Claude macht heute Abend eine Folge daraus'
+    zeigen(status === 'weiterverfolgen' ? 'Weiterverfolgen ✓ – Claude macht bald eine Folge daraus'
       : status === 'verworfen' ? 'Verworfen – kommt im Brain auf „verworfen“'
         : 'Entscheidung zurückgenommen')
     if (status !== 'ausgearbeitet' && status !== 'neu') setDetailId(null)

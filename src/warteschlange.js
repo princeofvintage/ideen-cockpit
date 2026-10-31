@@ -50,7 +50,7 @@ async function audioHochladen(eintrag, name) {
   })
   // Schon da = beim letzten Versuch hochgeladen, aber nicht aus der Warteschlange gelöscht
   if (error && !/exist|duplicate/i.test(error.message)) throw error
-  // Geschützter Link (30 Tage), damit Claude die Aufnahme abends abtippen lassen kann
+  // Geschützter Link (30 Tage), damit Claude die Aufnahme später abtippen lassen kann
   const { data } = await supabase.storage.from('aufnahmen').createSignedUrl(pfad, 30 * 24 * 3600)
   return { audio_pfad: pfad, audio_link: data?.signedUrl || null }
 }

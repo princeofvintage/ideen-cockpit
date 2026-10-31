@@ -92,7 +92,7 @@ export default function Aufnahme({ titel = 'Neue Idee', nurText = false, onSpeic
         if (s >= MAX_SEKUNDEN) stoppen()
       }, 250)
 
-      // Live-Text, wo Safari das kann – sonst tippt Claude es abends aus der Aufnahme ab.
+      // Live-Text, wo Safari das kann – sonst tippt Claude es später aus der Aufnahme ab.
       // Auf dem iPhone scheitert das oft, während gleichzeitig aufgenommen wird: dann still aufgeben,
       // nie in schneller Schleife neu starten.
       const Erkennung = erkennungHolen()
@@ -186,7 +186,7 @@ export default function Aufnahme({ titel = 'Neue Idee', nurText = false, onSpeic
             <div className="zeit">{uhrzeit(sekunden)}</div>
             <div className="live">{phase === 'start' ? 'Mikrofon startet …' : (live || (ohneLive ? 'Ich höre zu …' : ''))}</div>
             {phase === 'laeuft' && ohneLive && (
-              <p className="hilfe">Der Text erscheint nicht live – die Aufnahme wird abends abgetippt.</p>
+              <p className="hilfe">Der Text erscheint nicht live – die Aufnahme wird später abgetippt.</p>
             )}
             <button className="stopp" onClick={stoppen} aria-label="Aufnahme beenden"><span /></button>
             <div className="hilfe">Tippen zum Beenden</div>
@@ -202,7 +202,7 @@ export default function Aufnahme({ titel = 'Neue Idee', nurText = false, onSpeic
                   ? 'Die Aufnahme ist leider leer geblieben. Tipp die Idee bitte unten ein.'
                   : text
                     ? 'Passt der Text? Du kannst ihn kurz korrigieren. Die Aufnahme selbst wird immer mitgespeichert.'
-                    : 'Die Aufnahme wird heute Abend abgetippt. Du kannst unten trotzdem ein paar Worte dazuschreiben.'}
+                    : 'Die Aufnahme wird bald abgetippt. Du kannst unten trotzdem ein paar Worte dazuschreiben.'}
               </p>
             )}
             <textarea
