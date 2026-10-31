@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { supabase } from './supabase.js'
 import Kugel from './Kugel.jsx'
 
-const APP_URL = window.location.origin + import.meta.env.BASE_URL
+// Feste Adresse statt der aktuellen Seite – Links aus Mails zeigen nur hierher
+const APP_URL = 'https://princeofvintage.github.io/ideen-cockpit/'
 
 function fehlerText(error) {
   const m = error.message || ''
