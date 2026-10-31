@@ -24,6 +24,8 @@ if ('serviceWorker' in navigator && import.meta.env.PROD) {
   navigator.serviceWorker.addEventListener('controllerchange', () => {
     if (neuGeladen) return
     neuGeladen = true
-    location.reload()
+    // Nie mitten in einer Aufnahme oder Detailansicht neu laden – warten, bis sie zu ist
+    const wennFrei = () => (document.querySelector('.ebene') ? setTimeout(wennFrei, 2000) : location.reload())
+    wennFrei()
   })
 }
